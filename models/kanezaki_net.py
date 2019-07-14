@@ -4,8 +4,6 @@ import chainer.links as L
 
 from chainer_codebox.blocks.conv_block import ConvBlock
 
-N_CHANNEL = 100
-
 class KanezakiNet(chainer.Chain):
     def __init__(self, input_dim, nChannel=100, nConv=2):
         super(KanezakiNet, self).__init__()
