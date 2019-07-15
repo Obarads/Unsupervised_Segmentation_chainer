@@ -17,6 +17,10 @@ class KanezakiNet(chainer.Chain):
             self.nConv = nConv
 
     def __call__(self,x,y):
+        h = self.encoder(x)
+        return h
+
+    def encoder(self, x):
         h = self.conv_b1(x)
         for i in range(self.nConv-1):
             h = self.conv_b2[i](h)

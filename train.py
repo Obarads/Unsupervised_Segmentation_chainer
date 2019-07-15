@@ -16,7 +16,7 @@ from models.kanezaki_net import KanezakiNet
 def main():
     # Arguments
     parser = argparse.ArgumentParser(description='train model.')
-    parser.add_argument('--config', 'c', type=str, default=None)
+    #parser.add_argument('--config', 'c', type=str, default=None)
     parser.add_argument('--batchsize', '-b', type=int, default=32)
     parser.add_argument('--gpu', '-g', type=int, default=-1)
     parser.add_argument('--out', '-o', type=str, default='result')
@@ -48,13 +48,13 @@ def main():
     visualize = args.visualize
     minLabels = args.minLabels
 
-    #load image
+    #load image no pro
     im = cv2.imread("data/trials/108004.jpg")
     if gpu >= 0:
         xp = cp
     else:
         xp = np
-        data = xp.array([im.transpose( (2, 0, 1) ).astype('float32')/255.])
+    data = xp.array([im.transpose( (2, 0, 1) ).astype('float32')/255.])
     data = chainer.Variable(data)
 
     #slic
@@ -66,7 +66,8 @@ def main():
         l_inds.append(np.where(labels == u_labels[i])[0])
 
     #train
-    model = KanezakiNet(data.shape[0])
+    print(data.shape)
+    model = KanezakiNet(data.shape[1])
     if(gpu >= 0):
         print('using gpu {}'.format(gpu))
         chainer.backends.cuda.get_device_from_id(gpu).use()
@@ -77,7 +78,7 @@ def main():
     label_colours = np.random.randint(255,size=(100,3))
 
     for i in range(epoch):
-        output = model(data)
+        output = model.encoder(data)
         output = output.transpose(1,2,0)
         target = F.max(output, 1)
         im_target = target.array
