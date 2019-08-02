@@ -4,7 +4,6 @@ from chainer import iterators
 from chainer import functions as F
 
 import numpy as np
-import cupy as cp
 import argparse
 import os
 import cv2
@@ -27,30 +26,37 @@ def main():
     parser.add_argument('--use_do', '-ud', type=strtobool, default='false')
     parser.add_argument('--dropout_ratio', '-dr', type=float, default=0)
     parser.add_argument('--residual', '-r', type=strtobool, default='false')
+    parser.add_argument('--nChannel', '-nc', metavar='N', default=100, type=int, help='number of channels')
     parser.add_argument('--num_superpixels', '-ns', metavar='K', default=10000, type=int, help='number of superpixels')
     parser.add_argument('--compactness', '-c', metavar='C', default=100, type=float, help='compactness of superpixels')
     parser.add_argument('--visualize', '-v', metavar='1 or 0', default=1, type=int, help='visualization flag')
     parser.add_argument('--minLabels', '-ml', metavar='minL', default=3, type=int, help='minimum number of labels')
+    parser.add_argument('--use_colab', '-uc', default='false', type=strtobool, help='when you use colab')
+    parser.add_argument('--target_image', '-ti', default='"images/108004.jpg"', type=str, help='target image path')
 
     args = parser.parse_args()
 
-    batchsize = args.batchsize
+    batchsize = args.batchsize # disabled value
     gpu = args.gpu
     epoch = args.epoch
-    seed = args.seed
-    save_file_name = args.save_file_name
-    use_bn = args.use_bn
-    use_do = args.use_do
-    dropout_ratio = args.dropout_ratio
-    residual = args.residual
+    seed = args.seed # disabled value
+    save_file_name = args.save_file_name # disabled value
+    use_bn = args.use_bn # disabled value
+    use_do = args.use_do # disabled value
+    dropout_ratio = args.dropout_ratio # disabled value
+    residual = args.residual # disabled value
+    nChannel = args.nChannel
     compactness = args.compactness
     num_superpixels = args.num_superpixels
     visualize = args.visualize
     minLabels = args.minLabels
+    use_colab = args.use_colab
+    target_image = args.target_image
 
     #load image no pro
-    im = cv2.imread("data/trials/108004.jpg")
+    im = cv2.imread(target_image)
     if gpu >= 0:
+        import cupy as cp
         xp = cp
     else:
         xp = np
@@ -66,8 +72,7 @@ def main():
         l_inds.append(np.where(labels == u_labels[i])[0])
 
     #train
-    print(data.shape)
-    model = KanezakiNet(data.shape[1])
+    model = KanezakiNet(data.shape[1],nChannel=nChannel)
     if(gpu >= 0):
         print('using gpu {}'.format(gpu))
         chainer.backends.cuda.get_device_from_id(gpu).use()
@@ -77,16 +82,22 @@ def main():
 
     label_colours = np.random.randint(255,size=(100,3))
 
-    for i in range(epoch):
-        output = model.encoder(data)
-        output = output.transpose(1,2,0)
-        target = F.max(output, 1)
+    for epoch_now in range(epoch):
+        output = model.encoder(data)[0]
+        output = F.reshape(F.transpose(output,axes=(1,2,0)),(-1,nChannel))
+        target = F.argmax(output, 1)
         im_target = target.array
+        if gpu >= 0:
+            im_target = cp.asnumpy(im_target)
         nLabels = len(xp.unique(im_target))
         if visualize:
-            im_target_rgb = np.array([label_colours[ c % 100 ] for c in im_target])
+            im_target_rgb = np.array([label_colours[ c % 100 ] for c in im_target])    
             im_target_rgb = im_target_rgb.reshape( im.shape ).astype( np.uint8 )
-            cv2.imshow( "output", im_target_rgb )
+            if use_colab:
+                from google.colab.patches import cv2_imshow
+                cv2_imshow(im_target_rgb)
+            else:
+                cv2.imshow( "output", im_target_rgb )
             cv2.waitKey(10)
         
         # superpixel refinement
@@ -98,15 +109,15 @@ def main():
             for j in range(len(hist)):
                 hist[ j ] = len( np.where( labels_per_sp == u_labels_per_sp[ j ] )[ 0 ] )
             im_target[ l_inds[ i ] ] = u_labels_per_sp[ np.argmax( hist ) ]
+        if gpu >= 0:
+            im_target = cp.asarray(im_target)
         target = chainer.Variable( im_target )
         loss = loss_fn(output, target)
         model.cleargrads()
         loss.backward()
         optimizer.update()
 
-        print (i, '/', epoch, ':', nLabels, loss.data)
-        # for pytorch 1.0
-        # print (batch_idx, '/', args.maxIter, ':', nLabels, loss.item())
+        print (epoch_now, '/', epoch, ':', nLabels, loss.data)
         if nLabels <= minLabels:
             print ("nLabels", nLabels, "reached minLabels", minLabels, ".")
             break
@@ -114,7 +125,7 @@ def main():
     # save output image
     if not visualize:
         output = model( data )[ 0 ]
-        output = output.transpose(1,2,0)
+        output = F.transpose(output, axes=(1,2,0))
         target = F.max(output, 1)
         im_target = target.array
         im_target_rgb = np.array([label_colours[ c % 100 ] for c in im_target])
