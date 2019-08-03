@@ -33,6 +33,8 @@ def main():
     parser.add_argument('--minLabels', '-ml', metavar='minL', default=3, type=int, help='minimum number of labels')
     parser.add_argument('--use_colab', '-uc', default='false', type=strtobool, help='when you use colab')
     parser.add_argument('--input', metavar='FILENAME', help='input image file name', required=True)
+    parser.add_argument('--nConv', metavar='M', default=2, type=int, help='number of convolutional layers')
+
     args = parser.parse_args()
 
     batchsize = args.batchsize # disabled value
@@ -51,6 +53,7 @@ def main():
     minLabels = args.minLabels
     use_colab = args.use_colab
     target_image = args.input
+    nConv = args.nConv
 
     if gpu >= 0:
         import cupy as cp
@@ -77,7 +80,7 @@ def main():
     print("E:",len(l_inds))
 
     #train
-    model = KanezakiNet(data.shape[1],nChannel=nChannel)
+    model = KanezakiNet(data.shape[1],nChannel=nChannel,nConv=nConv)
     if(gpu >= 0):
         print('using gpu {}'.format(gpu))
         model.to_gpu(gpu)
