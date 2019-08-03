@@ -32,8 +32,7 @@ def main():
     parser.add_argument('--visualize', '-v', metavar='1 or 0', default=1, type=int, help='visualization flag')
     parser.add_argument('--minLabels', '-ml', metavar='minL', default=3, type=int, help='minimum number of labels')
     parser.add_argument('--use_colab', '-uc', default='false', type=strtobool, help='when you use colab')
-    parser.add_argument('--target_image', '-ti', default='"images/108004.jpg"', type=str, help='target image path')
-
+    parser.add_argument('--input', metavar='FILENAME', help='input image file name', required=True)
     args = parser.parse_args()
 
     batchsize = args.batchsize # disabled value
@@ -51,41 +50,51 @@ def main():
     visualize = args.visualize
     minLabels = args.minLabels
     use_colab = args.use_colab
-    target_image = args.target_image
+    target_image = args.input
 
-    #load image no pro
-    im = cv2.imread(target_image)
     if gpu >= 0:
         import cupy as cp
         xp = cp
     else:
         xp = np
+
+    #load image no pro
+    im = cv2.imread(target_image)
+    print("A:",im)
     data = xp.array([im.transpose( (2, 0, 1) ).astype('float32')/255.])
+    print("B:",data.shape)
     data = chainer.Variable(data)
 
     #slic
     labels = segmentation.slic(im, compactness=compactness, n_segments=num_superpixels)
     labels = labels.reshape(im.shape[0]*im.shape[1])
+    print("C:",labels.shape)
     u_labels = np.unique(labels)
+    print("D:",u_labels.shape)
     l_inds = []
     for i in range(len(u_labels)):
         l_inds.append(np.where(labels == u_labels[i])[0])
+    print("E:",len(l_inds))
 
     #train
     model = KanezakiNet(data.shape[1],nChannel=nChannel)
     if(gpu >= 0):
         print('using gpu {}'.format(gpu))
-        chainer.backends.cuda.get_device_from_id(gpu).use()
-        model.to_gpu()
-    optimizer = optimizers.SGD(lr=0.1).setup(model)
+        model.to_gpu(gpu)
+    optimizer = optimizers.MomentumSGD(lr=0.1,momentum=0.9).setup(model)
     loss_fn = F.softmax_cross_entropy
 
     label_colours = np.random.randint(255,size=(100,3))
+    print("F:",len(label_colours))
 
     for epoch_now in range(epoch):
         output = model.encoder(data)[0]
+        print("G:",output.shape)
         output = F.reshape(F.transpose(output,axes=(1,2,0)),(-1,nChannel))
+        print("H:",output.shape)
         target = F.argmax(output, 1)
+        print("I:",target.shape)
+
         im_target = target.array
         if gpu >= 0:
             im_target = cp.asnumpy(im_target)
@@ -110,7 +119,7 @@ def main():
                 hist[ j ] = len( np.where( labels_per_sp == u_labels_per_sp[ j ] )[ 0 ] )
             im_target[ l_inds[ i ] ] = u_labels_per_sp[ np.argmax( hist ) ]
         if gpu >= 0:
-            im_target = cp.asarray(im_target)
+            im_target = cp.asarray(im_target).to_gpu(gpu)
         target = chainer.Variable( im_target )
         loss = loss_fn(output, target)
         model.cleargrads()

@@ -37,13 +37,13 @@ class ConvBlock(chainer.Chain):
 
         h = self.conv(x)
 
+        if self.activation is not None:
+            h = self.activation(h)
+
         if self.use_lrn:
             h = F.local_response_normalization(h)
         if self.use_bn:
             h = self.bn(h)
-        
-        if self.activation is not None:
-            h = self.activation(h)
         
         if self.residual:
             raise NotImplementedError('not implemented yet')
