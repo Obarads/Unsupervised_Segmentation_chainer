@@ -119,7 +119,7 @@ def main():
                 hist[ j ] = len( np.where( labels_per_sp == u_labels_per_sp[ j ] )[ 0 ] )
             im_target[ l_inds[ i ] ] = u_labels_per_sp[ np.argmax( hist ) ]
         if gpu >= 0:
-            im_target = cp.asarray(im_target).to_gpu(gpu)
+            im_target = cp.asarray(im_target)
         target = chainer.Variable( im_target )
         loss = loss_fn(output, target)
         model.cleargrads()
