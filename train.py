@@ -1,5 +1,4 @@
 import os, sys
-
 sys.path.append(os.path.dirname(__file__))
 
 import chainer
@@ -69,21 +68,16 @@ def main(args=None):
 
     #load image no pro
     im = cv2.imread(target_image)
-    print("A:",im)
     data = xp.array([im.transpose( (2, 0, 1) ).astype('float32')/255.])
-    print("B:",data.shape)
     data = chainer.Variable(data)
 
     #slic
     labels = segmentation.slic(im, compactness=compactness, n_segments=num_superpixels)
     labels = labels.reshape(im.shape[0]*im.shape[1])
-    print("C:",labels.shape)
     u_labels = np.unique(labels)
-    print("D:",u_labels.shape)
     l_inds = []
     for i in range(len(u_labels)):
         l_inds.append(np.where(labels == u_labels[i])[0])
-    print("E:",len(l_inds))
 
     #train
     model = KanezakiNet(data.shape[1],nChannel=nChannel,nConv=nConv)
@@ -94,15 +88,11 @@ def main(args=None):
     loss_fn = F.softmax_cross_entropy
 
     label_colours = np.random.randint(255,size=(100,3))
-    print("F:",len(label_colours))
 
     for epoch_now in range(epoch):
         output = model.encoder(data)[0]
-        print("G:",output.shape)
         output = F.reshape(F.transpose(output,axes=(1,2,0)),(-1,nChannel))
-        print("H:",output.shape)
         target = F.argmax(output, 1)
-        print("I:",target.shape)
 
         im_target = target.array
         if gpu >= 0:
@@ -122,7 +112,6 @@ def main(args=None):
         # TODO: use Torch Variable instead of numpy for faster calculation
         for i in range(len(l_inds)):
             labels_per_sp = im_target[ l_inds[ i ] ]
-            print("J:",target.shape)
             u_labels_per_sp = np.unique( labels_per_sp )
             hist = np.zeros( len(u_labels_per_sp) )
             for j in range(len(hist)):
