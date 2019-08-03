@@ -90,6 +90,7 @@ def main(args=None):
     label_colours = np.random.randint(255,size=(100,3))
 
     for epoch_now in range(epoch):
+        model.cleargrads()
         output = model.encoder(data)[0]
         output = F.reshape(F.transpose(output,axes=(1,2,0)),(-1,nChannel))
         target = F.argmax(output, 1)
@@ -98,6 +99,7 @@ def main(args=None):
         if gpu >= 0:
             im_target = cp.asnumpy(im_target)
         nLabels = len(xp.unique(im_target))
+
         if visualize:
             im_target_rgb = np.array([label_colours[ c % 100 ] for c in im_target])    
             im_target_rgb = im_target_rgb.reshape( im.shape ).astype( np.uint8 )
@@ -121,7 +123,6 @@ def main(args=None):
             im_target = cp.asarray(im_target)
         target = chainer.Variable( im_target )
         loss = loss_fn(output, target)
-        model.cleargrads()
         loss.backward()
         optimizer.update()
 
