@@ -1,3 +1,7 @@
+import os, sys
+
+sys.path.append(os.path.dirname(__file__))
+
 import chainer
 from chainer import optimizers
 from chainer import iterators
@@ -11,6 +15,8 @@ from skimage import segmentation
 from distutils.util import strtobool
 
 from models.kanezaki_net import KanezakiNet
+
+
 
 def main(args=None):
     # Arguments
@@ -32,7 +38,7 @@ def main(args=None):
     parser.add_argument('--visualize', '-v', metavar='1 or 0', default=1, type=int, help='visualization flag')
     parser.add_argument('--minLabels', '-ml', metavar='minL', default=3, type=int, help='minimum number of labels')
     parser.add_argument('--use_colab', '-uc', default='false', type=strtobool, help='when you use colab')
-    parser.add_argument('--input', metavar='FILENAME', help='input image file name', required=True)
+    parser.add_argument('--input', type=str, help='input image file name', required=True)
     parser.add_argument('--nConv', metavar='M', default=2, type=int, help='number of convolutional layers')
 
     args = parser.parse_args(args=args)
