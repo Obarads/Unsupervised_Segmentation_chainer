@@ -12,7 +12,7 @@ from distutils.util import strtobool
 
 from models.kanezaki_net import KanezakiNet
 
-def main():
+def main(args=None):
     # Arguments
     parser = argparse.ArgumentParser(description='train model.')
     #parser.add_argument('--config', 'c', type=str, default=None)
@@ -35,7 +35,7 @@ def main():
     parser.add_argument('--input', metavar='FILENAME', help='input image file name', required=True)
     parser.add_argument('--nConv', metavar='M', default=2, type=int, help='number of convolutional layers')
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=args)
 
     batchsize = args.batchsize # disabled value
     gpu = args.gpu
@@ -116,6 +116,7 @@ def main():
         # TODO: use Torch Variable instead of numpy for faster calculation
         for i in range(len(l_inds)):
             labels_per_sp = im_target[ l_inds[ i ] ]
+            print("J:",target.shape)
             u_labels_per_sp = np.unique( labels_per_sp )
             hist = np.zeros( len(u_labels_per_sp) )
             for j in range(len(hist)):
