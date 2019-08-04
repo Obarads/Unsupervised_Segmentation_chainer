@@ -1,4 +1,4 @@
-# unsupervised_segmentation_chainer
+# Unsupervised Segmentation using chainer
 ## About
 This repository is a chainer implementation of the method proposed by Kanezaki[1].
 
