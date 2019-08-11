@@ -1,21 +1,14 @@
-"""
-This code is written based on the following reference.
-corochann, "corochann/chainer-pointnet: Chainer implementation of PointNet, PointNet++, KD-Network and 3DContextNework," [Online]. Available: https://github.com/corochann/chainer-pointnet. [Accessed: 30-Jun-2019]
-
-should modify this code (lrn and bn)
-"""
-
 import sys
 
 import chainer
 from chainer import functions
 from chainer import links
+from chainer import Sequential
 
 class ConvBlock(chainer.Chain):
     # L.Convolution2D argument is same as ConvBlock argument except dlate and groups.
     # do = dropout
     # bn = BatchNormalization
-    # lrn = local_response_normalization
     def __init__(self, in_channels, out_channels, ksize=None, stride=1, pad=0, processing_order=["bn","act"], nobias=False, initialW=None, initial_bias=None, activation=functions.relu, dropout_ratio=.5):
         super(ConvBlock, self).__init__()
         with self.init_scope():
@@ -23,26 +16,25 @@ class ConvBlock(chainer.Chain):
                 in_channels, out_channels, ksize=ksize, stride=stride, pad=pad,
                 nobias=nobias, initialW=initialW, initial_bias=initial_bias)
 
-            processing_list = chainer.ChainList()
+            self.processing_list = Sequential()
             for po in processing_order:
                 if po == "bn":
-                    processing_list.append(links.BatchNormalization(out_channels))
+                    process = links.BatchNormalization(out_channels)
                 elif po == "do":
-                    processing_list.append(self.__dropout)
+                    process = self.__dropout
                 elif po == "act":
-                    processing_list.append(activation)
+                    process = activation
                 else:
                     print('Error: processing_order contains exception.')
                     sys.exit(1)
-            self.processing_list = processing_list
+                self.processing_list.append(process)
 
         self.activation = activation
         self.dropout_ratio = dropout_ratio
 
     def __call__(self, x):
         h = self.conv(x)
-        for pl in self.processing_list:
-            h = pl(h)
+        h = self.processing_list(h)
         return h
 
     def __dropout(self,h):
