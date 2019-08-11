@@ -89,7 +89,7 @@ def main(args=None):
 
     for epoch_now in range(epoch):
         model.cleargrads()
-        output = model.encoder(data)[0]
+        output = model(data)[0]
         output = F.reshape(F.transpose(output,axes=(1,2,0)),(-1,nChannel))
         target = F.argmax(output, 1)
 
