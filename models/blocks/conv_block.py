@@ -12,11 +12,10 @@ class ConvBlock(chainer.Chain):
     def __init__(self, in_channels, out_channels, ksize=None, stride=1, pad=0, processing_order=["bn","act"], nobias=False, initialW=None, initial_bias=None, activation=functions.relu, dropout_ratio=.5):
         super(ConvBlock, self).__init__()
         with self.init_scope():
-            self.conv = links.Convolution2D(
-                in_channels, out_channels, ksize=ksize, stride=stride, pad=pad,
-                nobias=nobias, initialW=initialW, initial_bias=initial_bias)
-
             self.processing_list = Sequential()
+            self.processing_list.append(links.Convolution2D(
+                in_channels, out_channels, ksize=ksize, stride=stride, pad=pad,
+                nobias=nobias, initialW=initialW, initial_bias=initial_bias))
             for po in processing_order:
                 if po == "bn":
                     process = links.BatchNormalization(out_channels)
@@ -33,8 +32,7 @@ class ConvBlock(chainer.Chain):
         self.dropout_ratio = dropout_ratio
 
     def __call__(self, x):
-        h = self.conv(x)
-        h = self.processing_list(h)
+        h = self.processing_list(x)
         return h
 
     def __dropout(self,h):
