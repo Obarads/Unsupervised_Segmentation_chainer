@@ -15,8 +15,6 @@ from distutils.util import strtobool
 
 from models.kanezaki_net import KanezakiNet
 
-
-
 def main(args=None):
     # Arguments
     parser = argparse.ArgumentParser(description='train model.')

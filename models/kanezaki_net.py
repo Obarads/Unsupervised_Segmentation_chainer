@@ -6,7 +6,6 @@ import chainer.functions as F
 import chainer.links as L
 
 from blocks.conv_block import ConvBlock
-from blocks.conv_block import ConvBlock1
 
 class KanezakiNet(chainer.Chain):
     def __init__(self, input_dim, nChannel=100, nConv=2):
